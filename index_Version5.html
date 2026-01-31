@@ -55,41 +55,36 @@
       cursor: pointer;
     }
 
-    #date, #sub {
+    #date {
       margin-top: 12px;
       font-size: clamp(16px, 3vw, 28px);
       opacity: 0.75;
       letter-spacing: -0.01em;
       transition: opacity 160ms ease;
     }
-
-    #sub{
-      margin-top: 6px;
-      font-size: clamp(12px, 2.1vw, 18px);
+    #focusFloating{
+      position: absolute;
+      left: 50%;
+      top: 0;
+      transform: translate(-50%, -110%);
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.28);
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.08) inset;
+      font-size: clamp(11px, 1.7vw, 14px);
+      letter-spacing: 0.01em;
       opacity: 0;
+      pointer-events: none;
+      transition: opacity 160ms ease;
     }
+    #focusFloating.active{ opacity: 0.9; }
 
-    .center:hover #sub { opacity: 0.70; }
-
-    /* Панель (появляется при наведении) */
+    /* Панель */
     .controls-wrap {
       position: fixed;
       top: 12px;
       left: 12px;
       z-index: 3;
-    }
-
-    .hotspot {
-      width: 56px;
-      height: 56px;
-      border-radius: 14px;
-      background: rgba(255,255,255,0.10);
-      backdrop-filter: blur(10px);
-      display: grid;
-      place-items: center;
-      opacity: 0.10;
-      transition: opacity 200ms ease;
-      pointer-events: none;
     }
 
     .controls {
@@ -101,28 +96,11 @@
       border-radius: 14px;
       background: var(--panel);
       backdrop-filter: blur(12px);
-      opacity: 0;
-      transform: translateY(-6px);
-      transition: opacity 200ms ease, transform 200ms ease;
-      pointer-events: none;
+      opacity: 1;
+      transform: none;
+      pointer-events: auto;
       font-size: 12px;
     }
-
-    .controls-wrap::before {
-      content: "";
-      position: absolute;
-      top: -6px;
-      left: -6px;
-      width: 260px;
-      height: 92px;
-    }
-
-    .controls-wrap:hover .controls {
-      opacity: 1;
-      transform: translateY(0);
-      pointer-events: auto;
-    }
-    .controls-wrap:hover .hotspot { opacity: 0; }
 
     .row{
       display: flex;
@@ -188,7 +166,7 @@
       cursor: pointer;
     }
 
-    select, input[type="time"], input[type="number"], textarea{
+    select, input[type="time"], input[type="number"]{
       width: 100%;
       box-sizing: border-box;
       border: 0;
@@ -200,10 +178,6 @@
       font: inherit;
     }
 
-    textarea{
-      resize: vertical;
-      min-height: 90px;
-    }
 
     .hint{
       opacity: 0.65;
@@ -293,7 +267,7 @@
     .modal .grid .small-btn{ padding: 10px 12px; border-radius: 14px; }
 
     @media (prefers-reduced-motion: reduce) {
-      .controls, .hotspot { transition: none; }
+      .controls { transition: none; }
     }
   </style>
 </head>
@@ -302,8 +276,6 @@
   <canvas id="bg"></canvas>
 
   <div class="controls-wrap">
-    <div class="hotspot" aria-hidden="true">🎛️</div>
-
     <div class="controls" aria-label="Настройки">
       <!-- THEME -->
       <div class="title">Theme (MSK)</div>
@@ -380,20 +352,6 @@
       <!-- TIME -->
       <div class="title">Time extras</div>
 
-      <div class="row">
-        <label style="flex:1;">
-          Second timezone (on hover)
-          <select id="tz2">
-            <option value="UTC">UTC</option>
-            <option value="Europe/London">London</option>
-            <option value="America/New_York">New York</option>
-            <option value="Asia/Dubai">Dubai</option>
-            <option value="Asia/Tokyo">Tokyo</option>
-            <option value="Asia/Almaty">Almaty</option>
-          </select>
-        </label>
-      </div>
-
       <!-- NEW: Day/Night switch times + transition duration -->
       <div class="row">
         <label style="flex:1;">
@@ -409,15 +367,8 @@
       </div>
       <div class="row">
         <label style="flex:1;">
-          Transition (minutes)
-          <input id="transitionMinutes" type="number" min="0" max="180" />
-        </label>
-      </div>
-
-      <div class="row">
-        <label style="flex:1;">
-          Bedtime (MSK)
-          <input id="bedtime" type="time" />
+          Transition (seconds)
+          <input id="transitionSeconds" type="number" min="0" max="600" />
         </label>
       </div>
 
@@ -425,7 +376,6 @@
       <div class="title">Focus</div>
       <div class="row">
         <button id="openFocus" class="small-btn" type="button">Open timer</button>
-        <button id="surprise" class="small-btn" type="button">Surprise</button>
       </div>
 
       <!-- ACCENT -->
@@ -438,26 +388,18 @@
         </label>
       </div>
 
-      <!-- EXPORT / IMPORT -->
-      <div class="title">Settings</div>
-      <div class="row">
-        <button id="exportBtn" class="small-btn" type="button">Export JSON</button>
-        <button id="importBtn" class="small-btn" type="button">Import JSON</button>
-      </div>
-      <textarea id="jsonBox" placeholder="Export/Import settings JSON…"></textarea>
-
       <div class="hint">
         • Click background → wave<br>
         • Hold click (if enabled) → draw waves<br>
-        • Hover center → extras (2nd TZ + time remaining)
+        • Double-click time → open Focus timer
       </div>
     </div>
   </div>
 
   <div class="center" id="center">
-    <div id="time" title="Click to open Focus timer">--:--:--</div>
+    <div id="focusFloating" aria-live="polite"></div>
+    <div id="time" title="Double-click to open Focus timer">--:--:--</div>
     <div id="date">—</div>
-    <div id="sub">—</div>
   </div>
 
   <!-- Focus modal -->
@@ -478,8 +420,6 @@
       </div>
 
       <div class="grid">
-        <button class="small-btn" data-preset="25">Pomodoro 25</button>
-        <button class="small-btn" data-preset="50">Deep 50</button>
         <button class="small-btn" data-preset="5">Break 5</button>
         <button class="small-btn" data-preset="15">Break 15</button>
       </div>
@@ -539,7 +479,7 @@
       // replace hours with times (HH:MM) for precise switching
       dayStartTime: "07:00",
       nightStartTime: "21:00",
-      transitionMinutes: 30, // duration of smooth transition (minutes)
+      transitionSeconds: 12, // duration of smooth transition (seconds)
 
       scene: "space",       // space|fog|grid|liquid
       cursorMode: "magnet", // magnet|swirl|repulse|jelly
@@ -547,9 +487,6 @@
       minimal: false,
       nightChill: true,
       pauseAnim: false,
-
-      tz2: "UTC",
-      bedtime: "23:30",
 
       disableEffects: false,
 
@@ -562,6 +499,9 @@
         const raw = localStorage.getItem(KEY);
         if(!raw) return structuredClone(defaults);
         const s = JSON.parse(raw);
+        if (s.transitionSeconds == null && Number.isFinite(s.transitionMinutes)) {
+          s.transitionSeconds = s.transitionMinutes * 60;
+        }
         return {
           ...structuredClone(defaults),
           ...s,
@@ -593,14 +533,14 @@
       return { h: parseInt(get("hour"),10), m: parseInt(get("minute"),10), s: parseInt(get("second"),10), now };
     }
 
-    // parse "HH:MM" -> total minutes
-    function hhmmToMin(hhmm){
+    // parse "HH:MM" -> total seconds
+    function hhmmToSec(hhmm){
       if (!hhmm || typeof hhmm !== "string") return 0;
       const [hh,mm] = hhmm.split(":").map(Number);
-      if (Number.isFinite(hh) && Number.isFinite(mm)) return ((hh % 24) * 60) + (mm % 60);
+      if (Number.isFinite(hh) && Number.isFinite(mm)) return ((hh % 24) * 3600) + ((mm % 60) * 60);
       return 0;
     }
-    // check if x in interval [a,b) on circular 0..1440
+    // check if x in interval [a,b) on circular 0..86400
     function inInterval(x,a,b){
       if (a <= b) return x >= a && x < b;
       return x >= a || x < b; // wraps
@@ -608,53 +548,53 @@
 
     // compute blend 0..1: 0 => night, 1 => day
     function computeAutoBlend(){
-      const { h, m } = moscowParts();
-      const nowMin = h*60 + m;
-      const ds = hhmmToMin(settings.dayStartTime || defaults.dayStartTime);
-      const ns = hhmmToMin(settings.nightStartTime || defaults.nightStartTime);
-      const tMin = Math.max(0, Math.min(12*60, Number(settings.transitionMinutes) || defaults.transitionMinutes));
-      const half = tMin / 2;
+      const { h, m, s } = moscowParts();
+      const nowSec = h*3600 + m*60 + s;
+      const ds = hhmmToSec(settings.dayStartTime || defaults.dayStartTime);
+      const ns = hhmmToSec(settings.nightStartTime || defaults.nightStartTime);
+      const tSec = Math.max(0, Math.min(600, Number(settings.transitionSeconds) || defaults.transitionSeconds));
+      const half = tSec / 2;
 
       // Morning transition centered at ds: night -> day
-      const morningStart = (ds - half + 1440) % 1440;
-      const morningEnd   = (ds + half) % 1440;
+      const morningStart = (ds - half + 86400) % 86400;
+      const morningEnd   = (ds + half) % 86400;
 
       // Evening transition centered at ns: day -> night
-      const eveningStart = (ns - half + 1440) % 1440;
-      const eveningEnd   = (ns + half) % 1440;
+      const eveningStart = (ns - half + 86400) % 86400;
+      const eveningEnd   = (ns + half) % 86400;
 
       // If time is within full day (excluding transition windows) => day (1)
       const dayBodyStart = morningEnd;
       const dayBodyEnd = eveningStart;
 
-      if (inInterval(nowMin, morningEnd, eveningStart)){
+      if (inInterval(nowSec, morningEnd, eveningStart)){
         return 1; // fully day
       }
       // fully night between eveningEnd and morningStart
-      if (inInterval(nowMin, eveningEnd, morningStart)){
+      if (inInterval(nowSec, eveningEnd, morningStart)){
         return 0; // fully night
       }
 
       // check if inside morning transition window (night->day)
-      if (inInterval(nowMin, morningStart, morningEnd)){
+      if (inInterval(nowSec, morningStart, morningEnd)){
         // compute progress 0..1 across [morningStart..morningEnd)
-        let len = (morningEnd - morningStart + 1440) % 1440;
+        let len = (morningEnd - morningStart + 86400) % 86400;
         if (len === 0) return 1;
-        let pos = (nowMin - morningStart + 1440) % 1440;
+        let pos = (nowSec - morningStart + 86400) % 86400;
         return clamp(pos / len, 0, 1);
       }
 
       // check evening transition window (day->night)
-      if (inInterval(nowMin, eveningStart, eveningEnd)){
-        let len = (eveningEnd - eveningStart + 1440) % 1440;
+      if (inInterval(nowSec, eveningStart, eveningEnd)){
+        let len = (eveningEnd - eveningStart + 86400) % 86400;
         if (len === 0) return 0;
-        let pos = (nowMin - eveningStart + 1440) % 1440;
+        let pos = (nowSec - eveningStart + 86400) % 86400;
         // evening transition goes from 1 -> 0
         return clamp(1 - (pos / len), 0, 1);
       }
 
       // fallback
-      return (inInterval(nowMin, ds, ns)) ? 1 : 0;
+      return (inInterval(nowSec, ds, ns)) ? 1 : 0;
     }
 
     function setCssTheme(bgHex, textHex){
@@ -722,12 +662,11 @@
     }
 
     // ======================
-    // Clock UI + Hover extras
+    // Clock UI
     // ======================
     const timeEl = document.getElementById("time");
     const dateEl = document.getElementById("date");
-    const subEl  = document.getElementById("sub");
-    const center = document.getElementById("center");
+    const focusFloating = document.getElementById("focusFloating");
 
     // Helper: format time for tz. If tz === "local", omit timeZone -> local system time.
     function fmtTime(tz){
@@ -751,55 +690,10 @@
       }).format(new Date());
     }
 
-    function msUntilEndOfDayMsk(){
-      const now = new Date();
-      const parts = new Intl.DateTimeFormat("en-CA", {
-        timeZone: "Europe/Moscow",
-        year: "numeric", month: "2-digit", day: "2-digit"
-      }).formatToParts(now);
-      const get = (t)=>parts.find(p=>p.type===t)?.value ?? "00";
-      const y = parseInt(get("year"),10);
-      const mo = parseInt(get("month"),10);
-      const d = parseInt(get("day"),10);
-
-      // We can't create Date in MSK directly; we compute remaining using MSK clock parts:
-      const { h,m,s } = moscowParts();
-      const secLeft = (23*3600+59*60+59) - (h*3600+m*60+s);
-      return secLeft * 1000;
-    }
-
-    function msUntilBedtimeMsk(bedtimeHHMM){
-      const [bh,bm] = bedtimeHHMM.split(":").map(Number);
-      const { h,m,s } = moscowParts();
-      const nowSec = h*3600+m*60+s;
-      let bedSec = bh*3600+bm*60;
-      if (bedSec < nowSec) bedSec += 24*3600;
-      return (bedSec - nowSec) * 1000;
-    }
-
-    function niceDur(ms){
-      ms = Math.max(0, ms|0);
-      const total = Math.floor(ms/1000);
-      const hh = Math.floor(total/3600);
-      const mm = Math.floor((total%3600)/60);
-      const ss = total%60;
-      if (hh>0) return `${hh}ч ${mm}м`;
-      if (mm>0) return `${mm}м ${ss}с`;
-      return `${ss}с`;
-    }
-
     function updateClock(){
       // display is MSK fixed as before
       timeEl.textContent = fmtTime("Europe/Moscow");
       dateEl.textContent = fmtDate();
-
-      // hover extras
-      const tz2 = settings.tz2;
-      const tz2Time = fmtTime(tz2);
-      const leftDay = niceDur(msUntilEndOfDayMsk());
-      const leftBed = niceDur(msUntilBedtimeMsk(settings.bedtime || "23:30"));
-
-      subEl.textContent = `TZ2: ${tz2Time} • до конца дня: ${leftDay} • до сна: ${leftBed}`;
     }
 
     updateClock();
@@ -830,21 +724,13 @@
 
     const disableEffectsChk = document.getElementById("disableEffects");
 
-    const tz2Sel = document.getElementById("tz2");
-    const bedtimeInp = document.getElementById("bedtime");
-
     // NEW controls
     const dayStartTimeInp = document.getElementById("dayStartTime");
     const nightStartTimeInp = document.getElementById("nightStartTime");
-    const transitionMinutesInp = document.getElementById("transitionMinutes");
+    const transitionSecondsInp = document.getElementById("transitionSeconds");
 
     const regenAccentBtn = document.getElementById("regenAccent");
     const lockAccentChk = document.getElementById("lockAccent");
-    const surpriseBtn = document.getElementById("surprise");
-
-    const exportBtn = document.getElementById("exportBtn");
-    const importBtn = document.getElementById("importBtn");
-    const jsonBox = document.getElementById("jsonBox");
 
     function refreshUI(){
       modeAutoBtn.classList.toggle("active", settings.themeMode==="auto");
@@ -863,9 +749,6 @@
       nightChillChk.checked = !!settings.nightChill;
       pauseAnimChk.checked = !!settings.pauseAnim;
 
-      tz2Sel.value = settings.tz2;
-      bedtimeInp.value = settings.bedtime || "23:30";
-
       lockAccentChk.checked = !!settings.accentLocked;
 
       disableEffectsChk.checked = !!settings.disableEffects;
@@ -873,13 +756,12 @@
       // NEW: fill time inputs
       dayStartTimeInp.value = settings.dayStartTime || defaults.dayStartTime;
       nightStartTimeInp.value = settings.nightStartTime || defaults.nightStartTime;
-      transitionMinutesInp.value = Number(settings.transitionMinutes || defaults.transitionMinutes);
+      transitionSecondsInp.value = Number(settings.transitionSeconds || defaults.transitionSeconds);
     }
 
     function applyMinimalUI(){
       const minimal = !!settings.minimal;
       dateEl.style.display = minimal ? "none" : "";
-      subEl.style.display = minimal ? "none" : "";
     }
 
     function setMode(m){ settings.themeMode=m; saveSettings(); applyAll(); }
@@ -920,9 +802,6 @@
       applyAll();
     });
 
-    tz2Sel.addEventListener("change", e=>{ settings.tz2=e.target.value; saveSettings(); updateClock(); });
-    bedtimeInp.addEventListener("change", e=>{ settings.bedtime=e.target.value || "23:30"; saveSettings(); updateClock(); });
-
     // NEW: switching time inputs
     dayStartTimeInp.addEventListener("change", e=>{
       settings.dayStartTime = e.target.value || defaults.dayStartTime;
@@ -934,10 +813,10 @@
       saveSettings();
       applyAll();
     });
-    transitionMinutesInp.addEventListener("change", e=>{
+    transitionSecondsInp.addEventListener("change", e=>{
       let v = parseInt(e.target.value,10);
-      if (!Number.isFinite(v) || v < 0) v = defaults.transitionMinutes;
-      settings.transitionMinutes = v;
+      if (!Number.isFinite(v) || v < 0) v = defaults.transitionSeconds;
+      settings.transitionSeconds = v;
       saveSettings();
       applyAll();
     });
@@ -966,36 +845,6 @@
       applyAll();
     });
 
-    surpriseBtn.addEventListener("click", ()=>{
-      const scenes = ["space","fog","grid","liquid"];
-      const curs = ["magnet","swirl","repulse","jelly"];
-      settings.scene = scenes[Math.floor(Math.random()*scenes.length)];
-      settings.cursorMode = curs[Math.floor(Math.random()*curs.length)];
-      saveSettings();
-      refreshUI();
-    });
-
-    exportBtn.addEventListener("click", async ()=>{
-      const data = JSON.stringify(settings, null, 2);
-      jsonBox.value = data;
-      try { await navigator.clipboard.writeText(data); } catch {}
-    });
-
-    importBtn.addEventListener("click", ()=>{
-      try{
-        const parsed = JSON.parse(jsonBox.value);
-        settings = {
-          ...structuredClone(defaults),
-          ...parsed,
-          day: { ...structuredClone(defaults.day), ...(parsed.day||{}) },
-          night: { ...structuredClone(defaults.night), ...(parsed.night||{}) },
-        };
-        saveSettings();
-        applyAll();
-      }catch{
-        jsonBox.value = "Invalid JSON";
-      }
-    });
 
     // Auto refresh theme
     setInterval(()=>{ if (settings.themeMode==="auto") applyAll(); }, 10_000);
@@ -1008,7 +857,7 @@
     }
 
     // ======================
-    // Focus timer (open by button only)
+    // Focus timer
     // ======================
     const overlay = document.getElementById("overlay");
     const openFocus = document.getElementById("openFocus");
@@ -1035,6 +884,7 @@
       focusDisplay.textContent = fmtMMSS(focusLeft);
       const p = focusTotal > 0 ? (1 - focusLeft/focusTotal) : 0;
       focusBar.style.width = `${clamp(p*100,0,100)}%`;
+      updateFocusIndicator();
     }
 
     function setFocusPreset(min){
@@ -1057,8 +907,7 @@
     closeFocus.addEventListener("click", closeFocusModal);
     overlay.addEventListener("click", (e)=>{ if (e.target === overlay) closeFocusModal(); });
 
-    // removed click on time to open focus (use button)
-    // timeEl.addEventListener("click", openFocusModal);
+    timeEl.addEventListener("dblclick", openFocusModal);
 
     document.querySelectorAll('[data-preset]').forEach(btn=>{
       btn.addEventListener("click", ()=>{
@@ -1083,10 +932,12 @@
         }
         updateFocusUI();
       }, 1000);
+      updateFocusIndicator();
     });
 
     focusPause.addEventListener("click", ()=>{
       focusRunning = false;
+      updateFocusIndicator();
     });
 
     focusReset.addEventListener("click", ()=>{
@@ -1094,6 +945,12 @@
       focusRunning = false;
       updateFocusUI();
     });
+
+    function updateFocusIndicator(){
+      const active = focusRunning && focusLeft > 0;
+      focusFloating.textContent = active ? `⏱ ${fmtMMSS(focusLeft)}` : "";
+      focusFloating.classList.toggle("active", active);
+    }
 
     // ======================
     // Canvas: scenes + cursor modes + waves
