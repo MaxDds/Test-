@@ -1,1455 +1,911 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Московское время</title>
-
+  <title>Arcadia Sync</title>
   <style>
-    :root{
-      --bg:#000;
-      --text:#fff;
-      --fx: rgba(255,255,255,0.16);
-      --accent: rgba(120,200,255,0.55);
-      --panel: rgba(255,255,255,0.14);
-      --panel2: rgba(0,0,0,0.22);
-      color-scheme: dark;
+    :root {
+      --bg: #060708;
+      --text: #f4f4f4;
+      --muted: rgba(244, 244, 244, 0.64);
+      --glass: rgba(255, 255, 255, 0.08);
+      --glass-strong: rgba(255, 255, 255, 0.14);
+      --accent: #ff7a18;
+      --accent-2: #7cc3ff;
+      --border: rgba(255, 255, 255, 0.16);
+      --card-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
     }
 
-    html, body { height: 100%; margin: 0; overflow: hidden; }
-    body{
-      background: var(--bg);
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: "SF Pro Display", "Segoe UI", system-ui, sans-serif;
       color: var(--text);
-      display: grid;
-      place-items: center;
-      font-family: -apple-system, BlinkMacSystemFont,
-        "SF Pro Display", "SF Pro Text",
-        system-ui, "Segoe UI", Roboto, Arial, sans-serif;
-      -webkit-font-smoothing: antialiased;
-      text-rendering: optimizeLegibility;
+      background: var(--bg);
+      scroll-behavior: smooth;
     }
 
-    #bg {
+    body {
+      overflow-x: hidden;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .bg-glow {
       position: fixed;
       inset: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
-      display: block;
+      background:
+        radial-gradient(600px 600px at 18% 20%, rgba(124, 195, 255, 0.2), transparent 65%),
+        radial-gradient(500px 500px at 80% 10%, rgba(255, 122, 24, 0.16), transparent 70%),
+        radial-gradient(700px 700px at 70% 80%, rgba(124, 195, 255, 0.16), transparent 68%),
+        #060708;
+      z-index: -2;
     }
 
-    .center {
-      position: relative;
-      z-index: 1;
-      text-align: center;
-      user-select: none;
-      padding: 24px;
-    }
-
-    #time {
-      font-weight: 600;
-      font-size: clamp(48px, 12vw, 140px);
-      letter-spacing: -0.04em;
-      font-variant-numeric: tabular-nums;
-      line-height: 1;
-      cursor: pointer;
-    }
-
-    #date, #sub {
-      margin-top: 12px;
-      font-size: clamp(16px, 3vw, 28px);
-      opacity: 0.75;
-      letter-spacing: -0.01em;
-      transition: opacity 160ms ease;
-    }
-
-    #sub{
-      margin-top: 6px;
-      font-size: clamp(12px, 2.1vw, 18px);
-      opacity: 0;
-    }
-
-    .center:hover #sub { opacity: 0.70; }
-
-    /* Панель (появляется при наведении) */
-    .controls-wrap {
+    .noise {
       position: fixed;
-      top: 12px;
-      left: 12px;
-      z-index: 3;
-    }
-
-    .hotspot {
-      width: 56px;
-      height: 56px;
-      border-radius: 14px;
-      background: rgba(255,255,255,0.10);
-      backdrop-filter: blur(10px);
-      display: grid;
-      place-items: center;
-      opacity: 0.10;
-      transition: opacity 200ms ease;
+      inset: 0;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" stitchTiles="stitch"/></filter><rect width="160" height="160" filter="url(%23n)" opacity="0.15"/></svg>');
+      mix-blend-mode: soft-light;
+      opacity: 0.35;
       pointer-events: none;
+      z-index: -1;
     }
 
-    .controls {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 360px;
-      padding: 12px;
-      border-radius: 14px;
-      background: var(--panel);
-      backdrop-filter: blur(12px);
-      opacity: 0;
-      transform: translateY(-6px);
-      transition: opacity 200ms ease, transform 200ms ease;
-      pointer-events: none;
-      font-size: 12px;
+    .container {
+      width: min(1120px, 100%);
+      margin: 0 auto;
     }
 
-    .controls-wrap::before {
-      content: "";
-      position: absolute;
-      top: -6px;
-      left: -6px;
-      width: 260px;
-      height: 92px;
+    .section {
+      padding: 72px clamp(20px, 5vw, 80px);
+      position: relative;
     }
 
-    .controls-wrap:hover .controls {
-      opacity: 1;
-      transform: translateY(0);
-      pointer-events: auto;
+    .section-title {
+      text-align: center;
+      margin-bottom: 36px;
     }
-    .controls-wrap:hover .hotspot { opacity: 0; }
 
-    .row{
+    .section-title small {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      font-size: 11px;
+      margin-bottom: 14px;
+    }
+
+    .section-title h2 {
+      font-size: clamp(28px, 4vw, 44px);
+      margin: 0 0 16px;
+    }
+
+    .section-title p {
+      color: var(--muted);
+      margin: 0 auto;
+      max-width: 720px;
+      line-height: 1.6;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px clamp(20px, 5vw, 80px) 48px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .nav {
+      width: 100%;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      margin: 8px 0;
+      position: sticky;
+      top: 18px;
+      z-index: 2;
     }
 
-    .title{
-      font-weight: 600;
-      opacity: 0.85;
-      margin: 10px 0 6px;
-    }
-
-    .seg{
+    .logo {
       display: inline-flex;
-      background: var(--panel2);
-      border-radius: 12px;
-      padding: 3px;
-      gap: 3px;
-    }
-    .seg button{
-      border: 0;
-      background: transparent;
-      color: rgba(255,255,255,0.88);
-      padding: 6px 10px;
-      border-radius: 10px;
-      cursor: pointer;
-      font: inherit;
-    }
-    .seg button.active{
-      background: rgba(255,255,255,0.18);
-      color: rgba(255,255,255,0.97);
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.08) inset;
+      align-items: center;
+      gap: 12px;
+      color: var(--text);
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 12px;
+      opacity: 0.9;
     }
 
-    .small-btn{
-      border: 0;
-      cursor: pointer;
-      border-radius: 10px;
-      padding: 6px 10px;
-      background: var(--panel2);
-      color: rgba(255,255,255,0.92);
-      font: inherit;
-      white-space: nowrap;
-    }
-
-    .controls label{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      cursor:pointer;
-      opacity: .95;
-    }
-
-    input[type="color"]{
+    .logo-mark {
       width: 30px;
       height: 30px;
-      padding: 0;
-      border: none;
-      background: none;
-      cursor: pointer;
-    }
-
-    select, input[type="time"], input[type="number"], textarea{
-      width: 100%;
-      box-sizing: border-box;
-      border: 0;
-      outline: none;
-      border-radius: 12px;
-      padding: 9px 10px;
-      background: var(--panel2);
-      color: rgba(255,255,255,0.92);
-      font: inherit;
-    }
-
-    textarea{
-      resize: vertical;
-      min-height: 90px;
-    }
-
-    .hint{
-      opacity: 0.65;
-      font-size: 11px;
-      margin-top: 8px;
-      line-height: 1.25;
-    }
-
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding: 7px 10px;
-      border-radius: 999px;
-      background: rgba(0,0,0,0.20);
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.06) inset;
-      opacity: .95;
-    }
-
-    .checkbox{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      justify-content: space-between;
-      margin: 6px 0;
-    }
-
-    .checkbox input{ transform: scale(1.05); }
-
-    /* Focus overlay */
-    .overlay{
-      position: fixed;
-      inset: 0;
-      z-index: 10;
-      display: none;
-      place-items: center;
-      background: rgba(0,0,0,0.35);
-      backdrop-filter: blur(12px);
-    }
-    .overlay.open{ display: grid; }
-
-    .modal{
-      width: min(520px, calc(100vw - 28px));
-      border-radius: 20px;
-      padding: 16px;
-      background: rgba(255,255,255,0.12);
-      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
-      backdrop-filter: blur(14px);
-    }
-
-    .modal h3{
-      margin: 0 0 8px;
-      font-size: 14px;
-      opacity: .95;
-    }
-
-    .modal .big{
-      font-size: clamp(44px, 8vw, 72px);
-      font-weight: 650;
-      letter-spacing: -0.04em;
-      font-variant-numeric: tabular-nums;
-      line-height: 1.1;
-      margin: 6px 0 8px;
-      text-align: center;
-    }
-
-    .modal .bar{
-      height: 8px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.10);
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.08));
+      border: 1px solid var(--border);
+      position: relative;
       overflow: hidden;
-      margin: 8px 0 12px;
-    }
-    .modal .bar > div{
-      height: 100%;
-      width: 0%;
-      background: var(--accent);
+      display: grid;
+      place-items: center;
     }
 
-    .modal .grid{
-      display:grid;
+    .logo-mark::before {
+      content: "";
+      width: 16px;
+      height: 16px;
+      border-radius: 6px;
+      background: conic-gradient(from 180deg, rgba(255, 122, 24, 0.9), rgba(124, 195, 255, 0.8));
+      transform: rotate(20deg);
+    }
+
+    .logo-mark::after {
+      content: "";
+      position: absolute;
+      inset: 4px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      opacity: 0.5;
+    }
+
+    .nav-menu {
+      display: inline-flex;
+      gap: 4px;
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .nav-menu a {
+      color: var(--muted);
+      text-decoration: none;
+      padding: 8px 16px;
+      font-size: 13px;
+      border-radius: 999px;
+      transition: 0.3s ease;
+    }
+
+    .nav-menu a:hover,
+    .nav-menu a.active {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .nav-cta {
+      padding: 10px 20px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 13px;
+      text-decoration: none;
+      transition: 0.3s ease;
+    }
+
+    .nav-cta:hover {
+      border-color: rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    .hero-content {
+      margin-top: clamp(60px, 12vh, 120px);
+      text-align: center;
+      max-width: 920px;
+    }
+
+    .hero-title {
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin-bottom: 20px;
+      animation: fadeUp 1s ease forwards;
+    }
+
+    .hero-title span {
+      color: var(--accent-2);
+    }
+
+    .hero-subtitle {
+      font-size: clamp(15px, 2vw, 20px);
+      color: var(--muted);
+      line-height: 1.6;
+      margin: 0 auto 32px;
+      max-width: 720px;
+      animation: fadeUp 1s ease 0.2s forwards;
+      opacity: 0;
+    }
+
+    .hero-actions {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      animation: fadeUp 1s ease 0.35s forwards;
+      opacity: 0;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #ff7a18, #ffb347);
+      color: #1a120b;
+      padding: 12px 26px;
+      border-radius: 999px;
+      border: none;
+      text-decoration: none;
+      font-weight: 600;
+      box-shadow: 0 12px 30px rgba(255, 122, 24, 0.35);
+    }
+
+    .btn-secondary {
+      color: var(--text);
+      padding: 12px 26px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.05);
+      text-decoration: none;
+    }
+
+    .glass-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+      width: min(1100px, 100%);
+      margin-top: clamp(40px, 8vh, 80px);
+    }
+
+    .glass-card {
+      padding: 20px 22px;
+      border-radius: 18px;
+      background: var(--glass-strong);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--card-shadow);
+      transition: transform 0.4s ease, box-shadow 0.4s ease;
+      min-height: 160px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .glass-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(130deg, rgba(255, 255, 255, 0.08), transparent 60%);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .glass-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 24px 50px rgba(0, 0, 0, 0.45);
+    }
+
+    .glass-card:hover::after {
+      opacity: 1;
+    }
+
+    .glass-card h3 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    .glass-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .stats {
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 40px;
+    }
+
+    .stat {
+      text-align: center;
+      min-width: 140px;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 28px;
+    }
+
+    .stat span {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .scroll-indicator {
+      position: absolute;
+      bottom: 26px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      animation: fadeUp 1s ease 0.55s forwards;
+      opacity: 0;
+    }
+
+    .scroll-line {
+      width: 2px;
+      height: 38px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.7));
+      border-radius: 999px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .scroll-line::after {
+      content: "";
+      position: absolute;
+      top: -10px;
+      left: 0;
+      right: 0;
+      height: 14px;
+      background: linear-gradient(180deg, rgba(255, 122, 24, 0), rgba(255, 122, 24, 0.9));
+      animation: scrollPulse 1.6s ease infinite;
+    }
+
+    .orb {
+      position: absolute;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(124, 195, 255, 0.35), transparent 65%);
+      top: -120px;
+      right: -60px;
+      filter: blur(2px);
+      animation: float 10s ease-in-out infinite;
+      z-index: 0;
+    }
+
+    .orb.orange {
+      background: radial-gradient(circle, rgba(255, 122, 24, 0.35), transparent 65%);
+      width: 380px;
+      height: 380px;
+      bottom: -180px;
+      left: -90px;
+      top: auto;
+      animation-delay: -2s;
+    }
+
+    .timeline {
+      position: relative;
+      display: grid;
+      gap: 28px;
+      margin-top: 40px;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      top: 10px;
+      bottom: 10px;
+      left: 50%;
+      width: 1px;
+      background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    }
+
+    .timeline-item {
+      display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 10px;
+      gap: 24px;
+      align-items: center;
     }
 
-    .modal .grid .small-btn{ padding: 10px 12px; border-radius: 14px; }
+    .timeline-item:nth-child(even) .timeline-card {
+      grid-column: 2;
+    }
 
-    @media (prefers-reduced-motion: reduce) {
-      .controls, .hotspot { transition: none; }
+    .timeline-card {
+      padding: 18px 20px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(16px);
+      box-shadow: var(--card-shadow);
+    }
+
+    .timeline-card h4 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+
+    .timeline-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .step-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+      margin-top: 32px;
+    }
+
+    .step-card {
+      padding: 20px 22px;
+      border-radius: 18px;
+      background: rgba(20, 20, 22, 0.7);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--card-shadow);
+    }
+
+    .step-card span {
+      color: var(--accent);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+    }
+
+    .step-card h3 {
+      margin: 10px 0 12px;
+      font-size: 18px;
+    }
+
+    .step-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .wide-card {
+      padding: 32px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      box-shadow: var(--card-shadow);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+      margin-top: 32px;
+    }
+
+    .benefits-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+      margin-top: 32px;
+    }
+
+    .benefit-card {
+      padding: 20px 22px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--card-shadow);
+    }
+
+    .benefit-card h4 {
+      margin: 0 0 12px;
+    }
+
+    .benefit-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+      margin-top: 24px;
+    }
+
+    .contact-card {
+      padding: 18px 20px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .contact-card a {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      text-decoration: none;
+      font-size: 13px;
+    }
+
+    .faq-list {
+      margin-top: 28px;
+      display: grid;
+      gap: 14px;
+    }
+
+    details {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    details p {
+      color: var(--muted);
+      margin-top: 10px;
+      line-height: 1.6;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 32px 0 48px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes scrollPulse {
+      0% { transform: translateY(0); opacity: 0; }
+      30% { opacity: 1; }
+      100% { transform: translateY(52px); opacity: 0; }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(30px); }
+    }
+
+    @media (max-width: 900px) {
+      .nav {
+        flex-direction: column;
+        gap: 16px;
+      }
+      .nav-menu {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .timeline::before {
+        left: 20px;
+      }
+      .timeline-item {
+        grid-template-columns: 1fr;
+        padding-left: 24px;
+      }
+      .timeline-item:nth-child(even) .timeline-card {
+        grid-column: 1;
+      }
     }
   </style>
 </head>
-
 <body>
-  <canvas id="bg"></canvas>
+  <div class="bg-glow"></div>
+  <div class="noise"></div>
 
-  <div class="controls-wrap">
-    <div class="hotspot" aria-hidden="true">🎛️</div>
+  <section class="hero" id="top">
+    <div class="orb"></div>
+    <div class="orb orange"></div>
+    <header class="nav">
+      <div class="logo">
+        <span class="logo-mark"></span>
+        Arcadia Sync
+      </div>
+      <nav class="nav-menu">
+        <a class="active" href="#features">Features</a>
+        <a href="#how">Flow</a>
+        <a href="#benefits">Benefits</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <a class="nav-cta" href="#contact">Book a Call</a>
+    </header>
 
-    <div class="controls" aria-label="Настройки">
-      <!-- THEME -->
-      <div class="title">Theme (MSK)</div>
-      <div class="row">
-        <div class="seg" role="tablist" aria-label="Theme">
-          <button id="modeAuto" type="button">Auto</button>
-          <button id="modeDay" type="button">Day</button>
-          <button id="modeNight" type="button">Night</button>
+    <div class="hero-content">
+      <h1 class="hero-title">Game Aggregation Platform That Connects <span>10,000+</span> titles with one unified API</h1>
+      <p class="hero-subtitle">
+        Arcadia Sync connects casino operators to leading studios, live tables, and crash games
+        through a single, secure gateway. Launch faster, localize quicker, and scale without new
+        integrations every quarter.
+      </p>
+      <div class="hero-actions">
+        <a class="btn-primary" href="#contact">Get a demo</a>
+        <a class="btn-secondary" href="#benefits">Explore benefits</a>
+      </div>
+    </div>
+
+    <div class="glass-grid" id="features">
+      <article class="glass-card">
+        <h3>Unified portfolio</h3>
+        <p>Launch thousands of titles through a single SDK and instantly expand to new regions.</p>
+      </article>
+      <article class="glass-card">
+        <h3>Smart analytics</h3>
+        <p>Live dashboards for revenue, retention, and provider performance by territory.</p>
+      </article>
+      <article class="glass-card">
+        <h3>Always-on support</h3>
+        <p>24/7 monitoring, incident response, and release management handled by our team.</p>
+      </article>
+      <article class="glass-card">
+        <h3>Secure payouts</h3>
+        <p>Risk controls, audit trails, and payout routing embedded into every transaction.</p>
+      </article>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <strong>75+</strong>
+        <span>Studios</span>
+      </div>
+      <div class="stat">
+        <strong>24/7</strong>
+        <span>Ops Coverage</span>
+      </div>
+      <div class="stat">
+        <strong>99.99%</strong>
+        <span>Uptime</span>
+      </div>
+    </div>
+
+    <div class="scroll-indicator">
+      <span>Scroll</span>
+      <div class="scroll-line"></div>
+    </div>
+  </section>
+
+  <section class="section" id="overview">
+    <div class="container">
+      <div class="section-title">
+        <small>What we build</small>
+        <h2>What is a casino aggregation layer?</h2>
+        <p>
+          We unify games, wallets, and compliance tooling in one surface. Operators connect once,
+          then manage content, payments, and reporting without juggling dozens of vendor contracts.
+        </p>
+      </div>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-card">
+            <h4>Maintain API connections with 75+ studios</h4>
+            <p>We negotiate and monitor upstream integrations so your team focuses on acquisition.</p>
+          </div>
         </div>
-        <button id="reset" class="small-btn" type="button">Reset</button>
-      </div>
-
-      <div class="row">
-        <label class="pill">Day BG <input type="color" id="dayBg"></label>
-        <label class="pill">Day TXT <input type="color" id="dayText"></label>
-      </div>
-      <div class="row">
-        <label class="pill">Night BG <input type="color" id="nightBg"></label>
-        <label class="pill">Night TXT <input type="color" id="nightText"></label>
-      </div>
-
-      <!-- VISUAL -->
-      <div class="title">Visual</div>
-      <div class="row">
-        <label style="flex:1;">
-          Scene
-          <select id="scene">
-            <option value="space">Space</option>
-            <option value="fog">Fog</option>
-            <option value="grid">Grid</option>
-            <option value="liquid">Liquid</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="row">
-        <label style="flex:1;">
-          Cursor
-          <select id="cursorMode">
-            <option value="magnet">Magnet</option>
-            <option value="swirl">Swirl</option>
-            <option value="repulse">Repulse</option>
-            <option value="jelly">Jelly</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="checkbox">
-        <label>Draw waves (hold click)</label>
-        <input id="drawWaves" type="checkbox">
-      </div>
-
-      <div class="checkbox">
-        <label>Minimal mode</label>
-        <input id="minimal" type="checkbox">
-      </div>
-
-      <div class="checkbox">
-        <label>Night chill after 22:00</label>
-        <input id="nightChill" type="checkbox">
-      </div>
-
-      <div class="checkbox">
-        <label>Pause animation</label>
-        <input id="pauseAnim" type="checkbox">
-      </div>
-
-      <!-- Disable effects (kept from earlier change) -->
-      <div class="checkbox">
-        <label>Disable effects</label>
-        <input id="disableEffects" type="checkbox">
-      </div>
-
-      <!-- TIME -->
-      <div class="title">Time extras</div>
-
-      <div class="row">
-        <label style="flex:1;">
-          Second timezone (on hover)
-          <select id="tz2">
-            <option value="UTC">UTC</option>
-            <option value="Europe/London">London</option>
-            <option value="America/New_York">New York</option>
-            <option value="Asia/Dubai">Dubai</option>
-            <option value="Asia/Tokyo">Tokyo</option>
-            <option value="Asia/Almaty">Almaty</option>
-          </select>
-        </label>
-      </div>
-
-      <!-- NEW: Day/Night switch times + transition duration -->
-      <div class="row">
-        <label style="flex:1;">
-          Day start (MSK)
-          <input id="dayStartTime" type="time" />
-        </label>
-      </div>
-      <div class="row">
-        <label style="flex:1;">
-          Night start (MSK)
-          <input id="nightStartTime" type="time" />
-        </label>
-      </div>
-      <div class="row">
-        <label style="flex:1;">
-          Transition (minutes)
-          <input id="transitionMinutes" type="number" min="0" max="180" />
-        </label>
-      </div>
-
-      <div class="row">
-        <label style="flex:1;">
-          Bedtime (MSK)
-          <input id="bedtime" type="time" />
-        </label>
-      </div>
-
-      <!-- FOCUS -->
-      <div class="title">Focus</div>
-      <div class="row">
-        <button id="openFocus" class="small-btn" type="button">Open timer</button>
-        <button id="surprise" class="small-btn" type="button">Surprise</button>
-      </div>
-
-      <!-- ACCENT -->
-      <div class="title">Accent</div>
-      <div class="row">
-        <button id="regenAccent" class="small-btn" type="button">New accent</button>
-        <label class="pill" style="gap:10px;">
-          Lock
-          <input id="lockAccent" type="checkbox" />
-        </label>
-      </div>
-
-      <!-- EXPORT / IMPORT -->
-      <div class="title">Settings</div>
-      <div class="row">
-        <button id="exportBtn" class="small-btn" type="button">Export JSON</button>
-        <button id="importBtn" class="small-btn" type="button">Import JSON</button>
-      </div>
-      <textarea id="jsonBox" placeholder="Export/Import settings JSON…"></textarea>
-
-      <div class="hint">
-        • Click background → wave<br>
-        • Hold click (if enabled) → draw waves<br>
-        • Hover center → extras (2nd TZ + time remaining)
+        <div class="timeline-item">
+          <div class="timeline-card">
+            <h4>Standardize protocols into one API</h4>
+            <p>Game launch, wallet calls, and metadata stay consistent across all suppliers.</p>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-card">
+            <h4>Distribute new releases automatically</h4>
+            <p>Fresh content appears in your lobby the moment a studio publishes an update.</p>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-card">
+            <h4>Orchestrate payments and settlements</h4>
+            <p>Track revenue shares, settlements, and compliance checks from one console.</p>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <div class="center" id="center">
-    <div id="time" title="Click to open Focus timer">--:--:--</div>
-    <div id="date">—</div>
-    <div id="sub">—</div>
-  </div>
-
-  <!-- Focus modal -->
-  <div class="overlay" id="overlay">
-    <div class="modal">
-      <div class="row" style="margin:0 0 6px;">
-        <h3 style="margin:0;">Focus Timer</h3>
-        <button id="closeFocus" class="small-btn" type="button">Close</button>
+  <section class="section" id="how">
+    <div class="container">
+      <div class="section-title">
+        <small>Integration steps</small>
+        <h2>How Arcadia Sync works</h2>
+        <p>From kickoff to launch, we move through a clear, documented path with milestones.</p>
       </div>
-
-      <div class="big" id="focusDisplay">25:00</div>
-      <div class="bar"><div id="focusBar"></div></div>
-
-      <div class="row">
-        <button id="focusStart" class="small-btn" type="button">Start</button>
-        <button id="focusPause" class="small-btn" type="button">Pause</button>
-        <button id="focusReset" class="small-btn" type="button">Reset</button>
-      </div>
-
-      <div class="grid">
-        <button class="small-btn" data-preset="25">Pomodoro 25</button>
-        <button class="small-btn" data-preset="50">Deep 50</button>
-        <button class="small-btn" data-preset="5">Break 5</button>
-        <button class="small-btn" data-preset="15">Break 15</button>
-      </div>
-
-      <div class="hint" style="margin-top:10px;">
-        Во время Focus фон становится спокойнее. По завершении — мягкая волна + вспышка.
+      <div class="step-grid">
+        <div class="step-card">
+          <span>Step 1</span>
+          <h3>Business alignment</h3>
+          <p>Define target regions, content mix, and wallet requirements with our onboarding team.</p>
+        </div>
+        <div class="step-card">
+          <span>Step 2</span>
+          <h3>Documentation + sandbox</h3>
+          <p>Receive SDKs, mock games, and a dedicated testing environment in under 24 hours.</p>
+        </div>
+        <div class="step-card">
+          <span>Step 3</span>
+          <h3>Development sprint</h3>
+          <p>Integrate the API once and map payouts, currencies, and responsible gaming rules.</p>
+        </div>
+        <div class="step-card">
+          <span>Step 4</span>
+          <h3>Compliance review</h3>
+          <p>We validate jurisdictional settings, tracking, and reporting before launch.</p>
+        </div>
+        <div class="step-card">
+          <span>Step 5</span>
+          <h3>Go live</h3>
+          <p>Our release team publishes the catalog, then monitors the first 72 hours with you.</p>
+        </div>
       </div>
     </div>
-  </div>
-
-  <script>
-    // =========================
-    // Utils
-    // =========================
-    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-    const lerp = (a, b, t) => a + (b - a) * t;
-
-    function hexToRgb(hex) {
-      const m = String(hex).replace("#","").match(/.{1,2}/g);
-      if (!m) return {r:255,g:255,b:255};
-      const [r,g,b] = m.map(x => parseInt(x, 16));
-      return {r,g,b};
-    }
-
-    function rgbToHex({r,g,b}){
-      const rh = Math.round(r).toString(16).padStart(2,"0");
-      const gh = Math.round(g).toString(16).padStart(2,"0");
-      const bh = Math.round(b).toString(16).padStart(2,"0");
-      return `#${rh}${gh}${bh}`;
-    }
-
-    function mixRgb(a, b, t){
-      return { r: lerp(a.r,b.r,t), g: lerp(a.g,b.g,t), b: lerp(a.b,b.b,t) };
-    }
-
-    function rgbaFromCssVar(varName, alphaOverride=null){
-      const v = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
-      const m = v.match(/rgba?\(([^)]+)\)/);
-      if (!m) return `rgba(255,255,255,${alphaOverride ?? 0.2})`;
-      const parts = m[1].split(",").map(s => s.trim());
-      const r = parts[0] ?? "255";
-      const g = parts[1] ?? "255";
-      const b = parts[2] ?? "255";
-      const a = alphaOverride ?? (parts[3] ?? "0.2");
-      return `rgba(${r},${g},${b},${a})`;
-    }
-
-    // ======================
-    // Settings
-    // ======================
-    const KEY = "mskClockAll_v1";
-
-    const defaults = {
-      themeMode: "auto", // auto|day|night
-      day:   { bg: "#f3f5f7", text: "#0b0b0c" },
-      night: { bg: "#000000", text: "#ffffff" },
-      // replace hours with times (HH:MM) for precise switching
-      dayStartTime: "07:00",
-      nightStartTime: "21:00",
-      transitionMinutes: 30, // duration of smooth transition (minutes)
-
-      scene: "space",       // space|fog|grid|liquid
-      cursorMode: "magnet", // magnet|swirl|repulse|jelly
-      drawWaves: true,
-      minimal: false,
-      nightChill: true,
-      pauseAnim: false,
-
-      tz2: "UTC",
-      bedtime: "23:30",
-
-      disableEffects: false,
-
-      accentLocked: false,
-      accentRgba: null, // stored as "rgba(r,g,b,a)" or null
-    };
-
-    function loadSettings(){
-      try{
-        const raw = localStorage.getItem(KEY);
-        if(!raw) return structuredClone(defaults);
-        const s = JSON.parse(raw);
-        return {
-          ...structuredClone(defaults),
-          ...s,
-          day: { ...structuredClone(defaults.day), ...(s.day||{}) },
-          night: { ...structuredClone(defaults.night), ...(s.night||{}) },
-        };
-      }catch{
-        return structuredClone(defaults);
-      }
-    }
-
-    let settings = loadSettings();
-    function saveSettings(){ localStorage.setItem(KEY, JSON.stringify(settings)); }
-
-    // runtime storage for restoring effects after temporarily disabling
-    let _savedEffects = null;
-
-    // ======================
-    // Theme + Accent + Smooth switching
-    // ======================
-    function moscowParts() {
-      const now = new Date();
-      const parts = new Intl.DateTimeFormat("ru-RU", {
-        timeZone: "Europe/Moscow",
-        hour: "2-digit", minute: "2-digit", second: "2-digit",
-        hour12: false
-      }).formatToParts(now);
-      const get = (t) => parts.find(p => p.type === t)?.value ?? "00";
-      return { h: parseInt(get("hour"),10), m: parseInt(get("minute"),10), s: parseInt(get("second"),10), now };
-    }
-
-    // parse "HH:MM" -> total minutes
-    function hhmmToMin(hhmm){
-      if (!hhmm || typeof hhmm !== "string") return 0;
-      const [hh,mm] = hhmm.split(":").map(Number);
-      if (Number.isFinite(hh) && Number.isFinite(mm)) return ((hh % 24) * 60) + (mm % 60);
-      return 0;
-    }
-    // check if x in interval [a,b) on circular 0..1440
-    function inInterval(x,a,b){
-      if (a <= b) return x >= a && x < b;
-      return x >= a || x < b; // wraps
-    }
-
-    // compute blend 0..1: 0 => night, 1 => day
-    function computeAutoBlend(){
-      const { h, m } = moscowParts();
-      const nowMin = h*60 + m;
-      const ds = hhmmToMin(settings.dayStartTime || defaults.dayStartTime);
-      const ns = hhmmToMin(settings.nightStartTime || defaults.nightStartTime);
-      const tMin = Math.max(0, Math.min(12*60, Number(settings.transitionMinutes) || defaults.transitionMinutes));
-      const half = tMin / 2;
-
-      // Morning transition centered at ds: night -> day
-      const morningStart = (ds - half + 1440) % 1440;
-      const morningEnd   = (ds + half) % 1440;
-
-      // Evening transition centered at ns: day -> night
-      const eveningStart = (ns - half + 1440) % 1440;
-      const eveningEnd   = (ns + half) % 1440;
-
-      // If time is within full day (excluding transition windows) => day (1)
-      const dayBodyStart = morningEnd;
-      const dayBodyEnd = eveningStart;
-
-      if (inInterval(nowMin, morningEnd, eveningStart)){
-        return 1; // fully day
-      }
-      // fully night between eveningEnd and morningStart
-      if (inInterval(nowMin, eveningEnd, morningStart)){
-        return 0; // fully night
-      }
-
-      // check if inside morning transition window (night->day)
-      if (inInterval(nowMin, morningStart, morningEnd)){
-        // compute progress 0..1 across [morningStart..morningEnd)
-        let len = (morningEnd - morningStart + 1440) % 1440;
-        if (len === 0) return 1;
-        let pos = (nowMin - morningStart + 1440) % 1440;
-        return clamp(pos / len, 0, 1);
-      }
-
-      // check evening transition window (day->night)
-      if (inInterval(nowMin, eveningStart, eveningEnd)){
-        let len = (eveningEnd - eveningStart + 1440) % 1440;
-        if (len === 0) return 0;
-        let pos = (nowMin - eveningStart + 1440) % 1440;
-        // evening transition goes from 1 -> 0
-        return clamp(1 - (pos / len), 0, 1);
-      }
-
-      // fallback
-      return (inInterval(nowMin, ds, ns)) ? 1 : 0;
-    }
-
-    function setCssTheme(bgHex, textHex){
-      document.documentElement.style.setProperty("--bg", bgHex);
-      document.documentElement.style.setProperty("--text", textHex);
-
-      const {r,g,b} = hexToRgb(textHex);
-      document.documentElement.style.setProperty("--fx", `rgba(${r},${g},${b},0.16)`);
-
-      const luminance = (0.2126*r + 0.7152*g + 0.0722*b) / 255;
-      document.documentElement.style.colorScheme = luminance < 0.5 ? "dark" : "light";
-    }
-
-    // set theme by blending day/night colors according to t (0..1)
-    function setCssThemeBlend(dayBgHex, dayTextHex, nightBgHex, nightTextHex, t){
-      const dayBg = hexToRgb(dayBgHex);
-      const dayTxt = hexToRgb(dayTextHex);
-      const nightBg = hexToRgb(nightBgHex);
-      const nightTxt = hexToRgb(nightTextHex);
-      const mixBg = mixRgb(nightBg, dayBg, t);
-      const mixTxt = mixRgb(nightTxt, dayTxt, t);
-      setCssTheme(rgbToHex(mixBg), rgbToHex(mixTxt));
-    }
-
-    function hashDateSeed(){
-      const d = new Intl.DateTimeFormat("en-CA", { timeZone:"Europe/Moscow", year:"numeric", month:"2-digit", day:"2-digit" }).format(new Date());
-      let h = 2166136261;
-      for (let i=0;i<d.length;i++){
-        h ^= d.charCodeAt(i);
-        h = Math.imul(h, 16777619);
-      }
-      return (h>>>0);
-    }
-
-    function makeAccentFromSeed(seed){
-      // pastel-ish accent
-      const r = 90 + (seed % 120);
-      const g = 120 + ((seed>>7) % 110);
-      const b = 150 + ((seed>>14) % 100);
-      return `rgba(${clamp(r,0,255)},${clamp(g,0,255)},${clamp(b,0,255)},0.55)`;
-    }
-
-    function applyAccent(){
-      if (settings.accentRgba) {
-        document.documentElement.style.setProperty("--accent", settings.accentRgba);
-      } else {
-        document.documentElement.style.setProperty("--accent", makeAccentFromSeed(hashDateSeed()));
-      }
-    }
-
-    function applyAll(){
-      const mode = settings.themeMode;
-      if (mode === "auto"){
-        const blend = computeAutoBlend(); // 0..1
-        // use blend to interpolate between night (0) and day (1)
-        setCssThemeBlend(settings.day.bg, settings.day.text, settings.night.bg, settings.night.text, blend);
-      } else {
-        const themeName = mode;
-        const theme = settings[themeName];
-        setCssTheme(theme.bg, theme.text);
-      }
-      applyAccent();
-      applyMinimalUI();
-      refreshUI();
-    }
-
-    // ======================
-    // Clock UI + Hover extras
-    // ======================
-    const timeEl = document.getElementById("time");
-    const dateEl = document.getElementById("date");
-    const subEl  = document.getElementById("sub");
-    const center = document.getElementById("center");
-
-    // Helper: format time for tz. If tz === "local", omit timeZone -> local system time.
-    function fmtTime(tz){
-      if (tz === "local" || !tz) {
-        return new Intl.DateTimeFormat("ru-RU", {
-          hour: "2-digit", minute: "2-digit", second: "2-digit",
-          hour12: false
-        }).format(new Date());
-      }
-      return new Intl.DateTimeFormat("ru-RU", {
-        timeZone: tz,
-        hour: "2-digit", minute: "2-digit", second: "2-digit",
-        hour12: false
-      }).format(new Date());
-    }
-
-    function fmtDate(){
-      return new Intl.DateTimeFormat("ru-RU", {
-        timeZone: "Europe/Moscow",
-        weekday: "long", day: "numeric", month: "long", year: "numeric"
-      }).format(new Date());
-    }
-
-    function msUntilEndOfDayMsk(){
-      const now = new Date();
-      const parts = new Intl.DateTimeFormat("en-CA", {
-        timeZone: "Europe/Moscow",
-        year: "numeric", month: "2-digit", day: "2-digit"
-      }).formatToParts(now);
-      const get = (t)=>parts.find(p=>p.type===t)?.value ?? "00";
-      const y = parseInt(get("year"),10);
-      const mo = parseInt(get("month"),10);
-      const d = parseInt(get("day"),10);
-
-      // We can't create Date in MSK directly; we compute remaining using MSK clock parts:
-      const { h,m,s } = moscowParts();
-      const secLeft = (23*3600+59*60+59) - (h*3600+m*60+s);
-      return secLeft * 1000;
-    }
-
-    function msUntilBedtimeMsk(bedtimeHHMM){
-      const [bh,bm] = bedtimeHHMM.split(":").map(Number);
-      const { h,m,s } = moscowParts();
-      const nowSec = h*3600+m*60+s;
-      let bedSec = bh*3600+bm*60;
-      if (bedSec < nowSec) bedSec += 24*3600;
-      return (bedSec - nowSec) * 1000;
-    }
-
-    function niceDur(ms){
-      ms = Math.max(0, ms|0);
-      const total = Math.floor(ms/1000);
-      const hh = Math.floor(total/3600);
-      const mm = Math.floor((total%3600)/60);
-      const ss = total%60;
-      if (hh>0) return `${hh}ч ${mm}м`;
-      if (mm>0) return `${mm}м ${ss}с`;
-      return `${ss}с`;
-    }
-
-    function updateClock(){
-      // display is MSK fixed as before
-      timeEl.textContent = fmtTime("Europe/Moscow");
-      dateEl.textContent = fmtDate();
-
-      // hover extras
-      const tz2 = settings.tz2;
-      const tz2Time = fmtTime(tz2);
-      const leftDay = niceDur(msUntilEndOfDayMsk());
-      const leftBed = niceDur(msUntilBedtimeMsk(settings.bedtime || "23:30"));
-
-      subEl.textContent = `TZ2: ${tz2Time} • до конца дня: ${leftDay} • до сна: ${leftBed}`;
-    }
-
-    updateClock();
-    setTimeout(() => {
-      updateClock();
-      setInterval(updateClock, 1000);
-    }, 1000 - (Date.now() % 1000));
-
-    // ======================
-    // Controls wiring
-    // ======================
-    const modeAutoBtn  = document.getElementById("modeAuto");
-    const modeDayBtn   = document.getElementById("modeDay");
-    const modeNightBtn = document.getElementById("modeNight");
-    const resetBtn = document.getElementById("reset");
-
-    const dayBg    = document.getElementById("dayBg");
-    const dayText  = document.getElementById("dayText");
-    const nightBg  = document.getElementById("nightBg");
-    const nightText= document.getElementById("nightText");
-
-    const sceneSel = document.getElementById("scene");
-    const cursorSel = document.getElementById("cursorMode");
-    const drawWavesChk = document.getElementById("drawWaves");
-    const minimalChk = document.getElementById("minimal");
-    const nightChillChk = document.getElementById("nightChill");
-    const pauseAnimChk = document.getElementById("pauseAnim");
-
-    const disableEffectsChk = document.getElementById("disableEffects");
-
-    const tz2Sel = document.getElementById("tz2");
-    const bedtimeInp = document.getElementById("bedtime");
-
-    // NEW controls
-    const dayStartTimeInp = document.getElementById("dayStartTime");
-    const nightStartTimeInp = document.getElementById("nightStartTime");
-    const transitionMinutesInp = document.getElementById("transitionMinutes");
-
-    const regenAccentBtn = document.getElementById("regenAccent");
-    const lockAccentChk = document.getElementById("lockAccent");
-    const surpriseBtn = document.getElementById("surprise");
-
-    const exportBtn = document.getElementById("exportBtn");
-    const importBtn = document.getElementById("importBtn");
-    const jsonBox = document.getElementById("jsonBox");
-
-    function refreshUI(){
-      modeAutoBtn.classList.toggle("active", settings.themeMode==="auto");
-      modeDayBtn.classList.toggle("active", settings.themeMode==="day");
-      modeNightBtn.classList.toggle("active", settings.themeMode==="night");
-
-      dayBg.value = settings.day.bg;
-      dayText.value = settings.day.text;
-      nightBg.value = settings.night.bg;
-      nightText.value = settings.night.text;
-
-      sceneSel.value = settings.scene;
-      cursorSel.value = settings.cursorMode;
-      drawWavesChk.checked = !!settings.drawWaves;
-      minimalChk.checked = !!settings.minimal;
-      nightChillChk.checked = !!settings.nightChill;
-      pauseAnimChk.checked = !!settings.pauseAnim;
-
-      tz2Sel.value = settings.tz2;
-      bedtimeInp.value = settings.bedtime || "23:30";
-
-      lockAccentChk.checked = !!settings.accentLocked;
-
-      disableEffectsChk.checked = !!settings.disableEffects;
-
-      // NEW: fill time inputs
-      dayStartTimeInp.value = settings.dayStartTime || defaults.dayStartTime;
-      nightStartTimeInp.value = settings.nightStartTime || defaults.nightStartTime;
-      transitionMinutesInp.value = Number(settings.transitionMinutes || defaults.transitionMinutes);
-    }
-
-    function applyMinimalUI(){
-      const minimal = !!settings.minimal;
-      dateEl.style.display = minimal ? "none" : "";
-      subEl.style.display = minimal ? "none" : "";
-    }
-
-    function setMode(m){ settings.themeMode=m; saveSettings(); applyAll(); }
-    modeAutoBtn.addEventListener("click", ()=>setMode("auto"));
-    modeDayBtn.addEventListener("click", ()=>setMode("day"));
-    modeNightBtn.addEventListener("click", ()=>setMode("night"));
-
-    dayBg.addEventListener("input", e=>{ settings.day.bg=e.target.value; saveSettings(); applyAll(); });
-    dayText.addEventListener("input", e=>{ settings.day.text=e.target.value; saveSettings(); applyAll(); });
-    nightBg.addEventListener("input", e=>{ settings.night.bg=e.target.value; saveSettings(); applyAll(); });
-    nightText.addEventListener("input", e=>{ settings.night.text=e.target.value; saveSettings(); applyAll(); });
-
-    sceneSel.addEventListener("change", e=>{ settings.scene=e.target.value; saveSettings(); });
-    cursorSel.addEventListener("change", e=>{ settings.cursorMode=e.target.value; saveSettings(); });
-
-    drawWavesChk.addEventListener("change", e=>{ settings.drawWaves=!!e.target.checked; saveSettings(); });
-    minimalChk.addEventListener("change", e=>{ settings.minimal=!!e.target.checked; saveSettings(); applyAll(); });
-    nightChillChk.addEventListener("change", e=>{ settings.nightChill=!!e.target.checked; saveSettings(); });
-    pauseAnimChk.addEventListener("change", e=>{ settings.pauseAnim=!!e.target.checked; saveSettings(); });
-
-    disableEffectsChk.addEventListener("change", e=>{
-      const turnOn = !!e.target.checked;
-      settings.disableEffects = turnOn;
-      if (turnOn){
-        _savedEffects = { pauseAnim: settings.pauseAnim, drawWaves: settings.drawWaves, scene: settings.scene, cursorMode: settings.cursorMode };
-        settings.pauseAnim = true;
-        settings.drawWaves = false;
-      } else {
-        if (_savedEffects){
-          settings.pauseAnim = !!_savedEffects.pauseAnim;
-          settings.drawWaves = !!_savedEffects.drawWaves;
-          settings.scene = _savedEffects.scene || settings.scene;
-          settings.cursorMode = _savedEffects.cursorMode || settings.cursorMode;
-        }
-        _savedEffects = null;
-      }
-      saveSettings();
-      applyAll();
-    });
-
-    tz2Sel.addEventListener("change", e=>{ settings.tz2=e.target.value; saveSettings(); updateClock(); });
-    bedtimeInp.addEventListener("change", e=>{ settings.bedtime=e.target.value || "23:30"; saveSettings(); updateClock(); });
-
-    // NEW: switching time inputs
-    dayStartTimeInp.addEventListener("change", e=>{
-      settings.dayStartTime = e.target.value || defaults.dayStartTime;
-      saveSettings();
-      applyAll();
-    });
-    nightStartTimeInp.addEventListener("change", e=>{
-      settings.nightStartTime = e.target.value || defaults.nightStartTime;
-      saveSettings();
-      applyAll();
-    });
-    transitionMinutesInp.addEventListener("change", e=>{
-      let v = parseInt(e.target.value,10);
-      if (!Number.isFinite(v) || v < 0) v = defaults.transitionMinutes;
-      settings.transitionMinutes = v;
-      saveSettings();
-      applyAll();
-    });
-
-    resetBtn.addEventListener("click", ()=>{
-      settings = structuredClone(defaults);
-      saveSettings();
-      applyAll();
-    });
-
-    regenAccentBtn.addEventListener("click", ()=>{
-      // generate random pastel accent and store
-      const r = 90 + Math.floor(Math.random()*140);
-      const g = 110 + Math.floor(Math.random()*130);
-      const b = 140 + Math.floor(Math.random()*110);
-      settings.accentRgba = `rgba(${clamp(r,0,255)},${clamp(g,0,255)},${clamp(b,0,255)},0.55)`;
-      settings.accentLocked = true;
-      saveSettings();
-      applyAll();
-    });
-
-    lockAccentChk.addEventListener("change", e=>{
-      settings.accentLocked = !!e.target.checked;
-      if (!settings.accentLocked) settings.accentRgba = null; // back to daily
-      saveSettings();
-      applyAll();
-    });
-
-    surpriseBtn.addEventListener("click", ()=>{
-      const scenes = ["space","fog","grid","liquid"];
-      const curs = ["magnet","swirl","repulse","jelly"];
-      settings.scene = scenes[Math.floor(Math.random()*scenes.length)];
-      settings.cursorMode = curs[Math.floor(Math.random()*curs.length)];
-      saveSettings();
-      refreshUI();
-    });
-
-    exportBtn.addEventListener("click", async ()=>{
-      const data = JSON.stringify(settings, null, 2);
-      jsonBox.value = data;
-      try { await navigator.clipboard.writeText(data); } catch {}
-    });
-
-    importBtn.addEventListener("click", ()=>{
-      try{
-        const parsed = JSON.parse(jsonBox.value);
-        settings = {
-          ...structuredClone(defaults),
-          ...parsed,
-          day: { ...structuredClone(defaults.day), ...(parsed.day||{}) },
-          night: { ...structuredClone(defaults.night), ...(parsed.night||{}) },
-        };
-        saveSettings();
-        applyAll();
-      }catch{
-        jsonBox.value = "Invalid JSON";
-      }
-    });
-
-    // Auto refresh theme
-    setInterval(()=>{ if (settings.themeMode==="auto") applyAll(); }, 10_000);
-
-    // Night chill auto affects physics only, no UI changes
-    function isNightChillNow(){
-      if (!settings.nightChill) return false;
-      const { h } = moscowParts();
-      return (h >= 22 || h < 7);
-    }
-
-    // ======================
-    // Focus timer (open by button only)
-    // ======================
-    const overlay = document.getElementById("overlay");
-    const openFocus = document.getElementById("openFocus");
-    const closeFocus = document.getElementById("closeFocus");
-    const focusDisplay = document.getElementById("focusDisplay");
-    const focusBar = document.getElementById("focusBar");
-    const focusStart = document.getElementById("focusStart");
-    const focusPause = document.getElementById("focusPause");
-    const focusReset = document.getElementById("focusReset");
-
-    let focusTotal = 25*60;
-    let focusLeft  = focusTotal;
-    let focusRunning = false;
-    let focusTick = null;
-
-    function fmtMMSS(sec){
-      sec = Math.max(0, Math.floor(sec));
-      const m = Math.floor(sec/60);
-      const s = sec%60;
-      return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
-    }
-
-    function updateFocusUI(){
-      focusDisplay.textContent = fmtMMSS(focusLeft);
-      const p = focusTotal > 0 ? (1 - focusLeft/focusTotal) : 0;
-      focusBar.style.width = `${clamp(p*100,0,100)}%`;
-    }
-
-    function setFocusPreset(min){
-      focusTotal = min*60;
-      focusLeft = focusTotal;
-      focusRunning = false;
-      if (focusTick) { clearInterval(focusTick); focusTick=null; }
-      updateFocusUI();
-    }
-
-    function openFocusModal(){
-      overlay.classList.add("open");
-      updateFocusUI();
-    }
-    function closeFocusModal(){
-      overlay.classList.remove("open");
-    }
-
-    openFocus.addEventListener("click", openFocusModal);
-    closeFocus.addEventListener("click", closeFocusModal);
-    overlay.addEventListener("click", (e)=>{ if (e.target === overlay) closeFocusModal(); });
-
-    // removed click on time to open focus (use button)
-    // timeEl.addEventListener("click", openFocusModal);
-
-    document.querySelectorAll('[data-preset]').forEach(btn=>{
-      btn.addEventListener("click", ()=>{
-        setFocusPreset(parseInt(btn.dataset.preset,10));
-      });
-    });
-
-    focusStart.addEventListener("click", ()=>{
-      if (focusRunning) return;
-      focusRunning = true;
-      if (focusTick) clearInterval(focusTick);
-      focusTick = setInterval(()=>{
-        if (!focusRunning) return;
-        focusLeft -= 1;
-        if (focusLeft <= 0){
-          focusLeft = 0;
-          focusRunning = false;
-          clearInterval(focusTick); focusTick=null;
-          // completion effect: wave burst in center
-          addWave(w*0.5, h*0.5, 1400);
-          flash = 1.0;
-        }
-        updateFocusUI();
-      }, 1000);
-    });
-
-    focusPause.addEventListener("click", ()=>{
-      focusRunning = false;
-    });
-
-    focusReset.addEventListener("click", ()=>{
-      focusLeft = focusTotal;
-      focusRunning = false;
-      updateFocusUI();
-    });
-
-    // ======================
-    // Canvas: scenes + cursor modes + waves
-    // ======================
-    const canvas = document.getElementById("bg");
-    const ctx = canvas.getContext("2d", { alpha: true });
-
-    let w = 0, h = 0, dpr = 1;
-    function resize(){
-      w = window.innerWidth;
-      h = window.innerHeight;
-      dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-      canvas.width = Math.floor(w * dpr);
-      canvas.height = Math.floor(h * dpr);
-      canvas.style.width = w + "px";
-      canvas.style.height = h + "px";
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-    window.addEventListener("resize", resize);
-    resize();
-
-    const mouse = { x: w*0.5, y: h*0.5, active: false, down: false };
-    window.addEventListener("pointermove", (e)=>{ mouse.x=e.clientX; mouse.y=e.clientY; mouse.active=true; });
-    window.addEventListener("pointerleave", ()=>{ mouse.active=false; mouse.down=false; });
-    window.addEventListener("pointerdown", (e)=>{
-      const el = document.elementFromPoint(e.clientX, e.clientY);
-      if (el && el.closest && el.closest(".controls-wrap")) return;
-      mouse.down = true;
-      addWave(e.clientX, e.clientY, 900);
-    });
-    window.addEventListener("pointerup", ()=>{ mouse.down=false; });
-
-    // Waves
-    const waves = [];
-    function addWave(x,y,strength=900){
-      if (settings.disableEffects) return; // block waves when effects disabled
-      waves.push({ x,y, r:0, speed: 520, width: 12, strength, life:0, maxLife: 1.1 });
-    }
-
-    // Flash on focus complete
-    let flash = 0;
-
-    function particleCount(){
-      const area = w*h;
-      return Math.max(55, Math.min(160, Math.floor(area/15000)));
-    }
-
-    let particles = [];
-    function initParticles(){
-      const n = particleCount();
-      particles = Array.from({ length: n }, ()=>({
-        x: Math.random()*w,
-        y: Math.random()*h,
-        vx: (Math.random()-0.5)*0.08,
-        vy: (Math.random()-0.5)*0.08,
-        r: 1.1 + Math.random()*1.8,
-        // jelly anchor
-        ax: 0,
-        ay: 0,
-      }));
-    }
-    initParticles();
-
-    function sceneParams(){
-      // base
-      const base = {
-        lines: true,
-        grid: false,
-        fog: false,
-        flow: false,
-        linkDist: 150,
-        pointAlpha: 0.22,
-        lineAlpha: 0.10,
-        drift: 0.06,
-      };
-
-      if (settings.scene === "fog"){
-        return { ...base, lines:false, fog:true, linkDist: 0, pointAlpha: 0.14, drift: 0.045 };
-      }
-      if (settings.scene === "grid"){
-        return { ...base, grid:true, linkDist: 120, lineAlpha: 0.08, drift: 0.05 };
-      }
-      if (settings.scene === "liquid"){
-        return { ...base, flow:true, linkDist: 140, lineAlpha: 0.09, drift: 0.06 };
-      }
-      return base; // space
-    }
-
-    function getFx(alpha){ return rgbaFromCssVar("--fx", alpha); }
-    function getAccent(alpha){ return rgbaFromCssVar("--accent", alpha); }
-
-    let lastT = performance.now();
-
-    function step(t){
-      const dt = Math.min(0.033, (t-lastT)/1000);
-      lastT = t;
-
-      // If effects are disabled, skip heavy rendering and just clear canvas (body background remains visible)
-      if (settings.disableEffects){
-        ctx.clearRect(0,0,w,h);
-        requestAnimationFrame(step);
-        return;
-      }
-
-      if (settings.pauseAnim){
-        // Still draw a nice static frame (we keep drawing frame but skip motion updates)
-      }
-
-      ctx.clearRect(0,0,w,h);
-
-      // vignette
-      const vign = ctx.createRadialGradient(w*0.5, h*0.45, Math.min(w,h)*0.12, w*0.5, h*0.45, Math.max(w,h)*0.75);
-      vign.addColorStop(0, "rgba(0,0,0,0)");
-      vign.addColorStop(1, "rgba(0,0,0,0.22)");
-      ctx.fillStyle = vign;
-      ctx.fillRect(0,0,w,h);
-
-      // flash overlay
-      if (flash > 0){
-        ctx.fillStyle = getAccent(0.18 * flash);
-        ctx.fillRect(0,0,w,h);
-        flash = Math.max(0, flash - dt*0.9);
-      }
-
-      const sp = sceneParams();
-
-      // Grid overlay
-      if (sp.grid){
-        const size = 48;
-        ctx.strokeStyle = getFx(0.04);
-        ctx.lineWidth = 1;
-        for (let x = 0; x < w; x += size){
-          ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke();
-        }
-        for (let y = 0; y < h; y += size){
-          ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
-        }
-      }
-
-      // Night chill / Focus calm factors
-      const chill = isNightChillNow() ? 0.55 : 1.0;
-      const focusCalm = focusRunning ? 0.55 : 1.0;
-      const calm = chill * focusCalm;
-
-      const drift = sp.drift * calm;
-      const friction = lerp(0.985, 0.992, calm); // calmer => a bit more friction
-      const linkDist = sp.linkDist;
-      const linkDist2 = linkDist*linkDist;
-
-      // Flow field (Liquid)
-      const flowK = sp.flow ? (0.30 * calm) : 0.0;
-
-      // Waves affect particles
-      if (!settings.pauseAnim){
-        for (let k = waves.length - 1; k >= 0; k--){
-          const wave = waves[k];
-          wave.life += dt;
-          wave.r += wave.speed * dt;
-          const fade = 1 - (wave.life / wave.maxLife);
-
-          for (const p of particles){
-            const dx = p.x - wave.x;
-            const dy = p.y - wave.y;
-            const dist = Math.sqrt(dx*dx+dy*dy) || 1;
-            const diff = Math.abs(dist - wave.r);
-            if (diff < wave.width){
-              const closeness = 1 - (diff / wave.width);
-              const kick = wave.strength * closeness * fade;
-              p.vx += (dx/dist) * kick * dt * 0.05;
-              p.vy += (dy/dist) * kick * dt * 0.05;
-            }
-          }
-          if (wave.life >= wave.maxLife) waves.splice(k,1);
-        }
-      }
-
-      // Cursor dynamics
-      const mode = settings.cursorMode;
-      const radius = 190;
-      const r2 = radius*radius;
-
-      // Jelly anchor follows mouse
-      const jellyAnchor = { x: mouse.x, y: mouse.y };
-
-      for (const p of particles){
-        if (settings.pauseAnim){
-          // no movement update, but still render later
-        } else {
-          // very soft random drift
-          p.vx += (Math.random()-0.5)*drift*0.002;
-          p.vy += (Math.random()-0.5)*drift*0.002;
-
-          // flow field (liquid)
-          if (sp.flow){
-            const nx = p.x / 120;
-            const ny = p.y / 120;
-            const ang = Math.sin(nx + t*0.00025) + Math.cos(ny - t*0.00022);
-            const fx = Math.cos(ang*2.3) * flowK * 0.18;
-            const fy = Math.sin(ang*2.3) * flowK * 0.18;
-            p.vx += fx;
-            p.vy += fy;
-          }
-
-          if (mouse.active){
-            const dx = mouse.x - p.x;
-            const dy = mouse.y - p.y;
-            const d2 = dx*dx + dy*dy;
-
-            if (d2 < r2){
-              const d = Math.sqrt(d2) || 1;
-              const t0 = 1 - (d / radius); // 0..1
-
-              if (mode === "magnet"){
-                const pull = 0.045 * t0 * calm;
-                p.vx += (dx/d) * pull;
-                p.vy += (dy/d) * pull;
-                // sticky damping near mouse
-                const damp = 1 - (0.22 * t0);
-                p.vx *= damp; p.vy *= damp;
-              }
-
-              if (mode === "swirl"){
-                const pull = 0.020 * t0 * calm;
-                p.vx += (dx/d) * pull;
-                p.vy += (dy/d) * pull;
-                const swirl = 0.060 * t0 * calm;
-                p.vx += (-dy/d) * swirl;
-                p.vy += ( dx/d) * swirl;
-              }
-
-              if (mode === "repulse"){
-                const push = 0.070 * t0 * calm;
-                p.vx -= (dx/d) * push;
-                p.vy -= (dy/d) * push;
-              }
-
-              if (mode === "jelly"){
-                // spring toward anchor (mouse) with softness
-                // each particle gets a stored anchor offset for a “gel” feeling
-                if (!p._jinit){
-                  p._jinit = true;
-                  p.ax = p.x; p.ay = p.y;
-                }
-                // target is blended between original anchor and mouse
-                const tx = lerp(p.ax, jellyAnchor.x, 0.55);
-                const ty = lerp(p.ay, jellyAnchor.y, 0.55);
-                const sx = (tx - p.x);
-                const sy = (ty - p.y);
-                const spring = 0.0045 * (0.5 + t0) * calm;
-                p.vx += sx * spring;
-                p.vy += sy * spring;
-                // extra damping
-                p.vx *= (1 - 0.12*t0);
-                p.vy *= (1 - 0.12*t0);
-              }
-            } else if (mode === "jelly"){
-              // slowly relax anchors
-              if (p._jinit){
-                p.ax = lerp(p.ax, p.x, 0.002);
-                p.ay = lerp(p.ay, p.y, 0.002);
-              }
-            }
-          }
-
-          // integrate
-          p.x += p.vx;
-          p.y += p.vy;
-
-          // friction
-          p.vx *= friction;
-          p.vy *= friction;
-
-          // bounds
-          if (p.x < 0) { p.x = 0; p.vx *= -1; }
-          if (p.x > w) { p.x = w; p.vx *= -1; }
-          if (p.y < 0) { p.y = 0; p.vy *= -1; }
-          if (p.y > h) { p.y = h; p.vy *= -1; }
-        }
-      }
-
-      // Lines (skip in minimal or fog)
-      const showLines = sp.lines && !settings.minimal;
-
-      if (showLines && linkDist > 0){
-        for (let i=0;i<particles.length;i++){
-          const a = particles[i];
-          for (let j=i+1;j<particles.length;j++){
-            const b = particles[j];
-            const dx = a.x - b.x;
-            const dy = a.y - b.y;
-            const d2 = dx*dx + dy*dy;
-            if (d2 < linkDist2){
-              const t0 = 1 - (d2 / linkDist2);
-              ctx.strokeStyle = getFx(sp.lineAlpha * t0 * calm);
-              ctx.lineWidth = 1;
-              ctx.beginPath();
-              ctx.moveTo(a.x,a.y);
-              ctx.lineTo(b.x,b.y);
-              ctx.stroke();
-            }
-          }
-        }
-      }
-
-      // Points
-      for (const p of particles){
-        const a = sp.pointAlpha * calm;
-        ctx.fillStyle = getFx(a);
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r * (sp.fog ? 1.35 : 1.0), 0, Math.PI*2);
-        ctx.fill();
-      }
-
-      // Fog “blur-ish” glow
-      if (sp.fog){
-        ctx.fillStyle = getFx(0.04);
-        ctx.fillRect(0,0,w,h);
-      }
-
-      // Draw waves
-      for (const wave of waves){
-        const fade = 1 - (wave.life / wave.maxLife);
-        ctx.strokeStyle = getAccent(0.22 * fade);
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(wave.x, wave.y, wave.r, 0, Math.PI*2);
-        ctx.stroke();
-
-        ctx.strokeStyle = getAccent(0.08 * fade);
-        ctx.lineWidth = 7;
-        ctx.beginPath();
-        ctx.arc(wave.x, wave.y, wave.r, 0, Math.PI*2);
-        ctx.stroke();
-      }
-
-      // Draw waves on hold
-      if (!settings.pauseAnim && settings.drawWaves && mouse.down){
-        // emit small waves along path
-        if (Math.random() < 0.40){
-          addWave(mouse.x, mouse.y, 520);
-        }
-      }
-
-      requestAnimationFrame(step);
-    }
-
-    // Reduced motion support
-    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches){
-      settings.pauseAnim = true;
-      saveSettings();
-    }
-
-    // Start
-    applyAll();
-    refreshUI();
-    requestAnimationFrame((t)=>{ lastT=t; step(t); });
-  </script>
+  </section>
+
+  <section class="section" id="flow">
+    <div class="container">
+      <div class="section-title">
+        <small>Content distribution</small>
+        <h2>Content distribution flow</h2>
+        <p>Every game launch passes through our routing, caching, and telemetry layers.</p>
+      </div>
+      <div class="wide-card">
+        <p>
+          When a player selects a title, our gateway identifies the best provider endpoint,
+          translates the request into the correct protocol, and returns a ready-to-render URL or
+          iframe. Session data, player balance, and jurisdictional flags are synchronized in
+          milliseconds, with latency-safe caching for high-volume markets.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="benefits">
+    <div class="container">
+      <div class="section-title">
+        <small>Why teams choose us</small>
+        <h2>Benefits of working with Arcadia Sync</h2>
+        <p>Designed for operators who want scale without operational complexity.</p>
+      </div>
+      <div class="benefits-grid">
+        <div class="benefit-card">
+          <h4>Single API, thousands of games</h4>
+          <p>Skip repetitive integrations and keep your engineering roadmap focused.</p>
+        </div>
+        <div class="benefit-card">
+          <h4>Cost and time efficiency</h4>
+          <p>Launch markets faster with bundled compliance, reporting, and tooling.</p>
+        </div>
+        <div class="benefit-card">
+          <h4>Built-in engagement tools</h4>
+          <p>Offer jackpots, missions, and segmented promotions from one control layer.</p>
+        </div>
+        <div class="benefit-card">
+          <h4>Ongoing support + updates</h4>
+          <p>We handle new studio releases, patching, and incident response around the clock.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="comparison">
+    <div class="container">
+      <div class="section-title">
+        <small>Aggregator vs direct</small>
+        <h2>Aggregator or direct integrations?</h2>
+        <p>Compare the impact on speed, cost, and team workload.</p>
+      </div>
+      <div class="split">
+        <div class="wide-card">
+          <h3>Aggregation advantages</h3>
+          <p>
+            Launch new studios in days, keep a single technical contract, and rely on one set of
+            compliance and reporting tools. Operations teams gain a unified view of uptime,
+            performance, and payments without hopping between portals.
+          </p>
+        </div>
+        <div class="wide-card">
+          <h3>Direct integration trade-offs</h3>
+          <p>
+            Requires multiple SDKs, separate legal terms, individual release cycles, and additional
+            monitoring coverage. This model can be effective for a small catalog but scales slowly.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="contact">
+    <div class="container">
+      <div class="section-title">
+        <small>Contact us</small>
+        <h2>Let’s plan your launch</h2>
+        <p>Talk to our team and get a tailored integration roadmap within 48 hours.</p>
+      </div>
+      <div class="contact-grid">
+        <div class="contact-card">
+          <strong>WhatsApp</strong>
+          <span class="muted">Chat with onboarding</span>
+          <a href="#top">Start WhatsApp</a>
+        </div>
+        <div class="contact-card">
+          <strong>Telegram</strong>
+          <span class="muted">Sales + Solutions</span>
+          <a href="#top">Send Telegram</a>
+        </div>
+        <div class="contact-card">
+          <strong>Email</strong>
+          <span class="muted">partners@arcadiasync.io</span>
+          <a href="#top">Send email</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="faq">
+    <div class="container">
+      <div class="section-title">
+        <small>FAQ</small>
+        <h2>We’ve got answers</h2>
+        <p>Questions from operators evaluating their next aggregation partner.</p>
+      </div>
+      <div class="faq-list">
+        <details>
+          <summary>How fast can we integrate?</summary>
+          <p>Most teams complete sandbox integration in 7-10 business days, depending on wallet complexity.</p>
+        </details>
+        <details>
+          <summary>Do you support multiple currencies?</summary>
+          <p>Yes. We manage multi-currency wallets, conversions, and reporting per jurisdiction.</p>
+        </details>
+        <details>
+          <summary>Can we pick only certain providers?</summary>
+          <p>Absolutely. You can curate your catalog and add new studios whenever you are ready.</p>
+        </details>
+        <details>
+          <summary>How is uptime monitored?</summary>
+          <p>We run 24/7 observability with automated failover routing and live incident coverage.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    © 2026 Arcadia Sync. All rights reserved.
+  </footer>
 </body>
 </html>
