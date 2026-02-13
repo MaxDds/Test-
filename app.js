@@ -1,4 +1,7 @@
 (function () {
+  // Developer mode: set ?dev=1 to enable diagnostic logs
+  const isDev = new URLSearchParams(location.search).get('dev') === '1';
+
   if (!window.SITE) {
     console.error("window.SITE is missing. content.js must load BEFORE app.js");
     document.body.innerHTML =
@@ -82,6 +85,9 @@
   };
 
   function renderSection(sec) {
+    // defensive: if sec is falsy, return empty node
+    if (!sec) return h('div');
+
     const fn = registry[sec.type];
     const node = fn
       ? fn(sec.data || {})
@@ -97,10 +103,29 @@
   const descEl = document.getElementById("seo-description");
   if (descEl) descEl.setAttribute("content", (page.seo && page.seo.description) || "");
 
+  // Developer diagnostics: scan unknown section types
+  const sectionsList = Array.isArray(page.sections) ? page.sections : [];
+  const unknownSectionTypes = [...new Set(sectionsList.map(s => (s && s.type) || null).filter(t => t && !registry[t]))];
+  if (isDev) {
+    console.log('DEV: window.SITE exists:', !!window.SITE);
+    console.log('DEV: pageKey =', pageKey);
+    console.log('DEV: sections count =', sectionsList.length);
+    if (unknownSectionTypes.length) console.warn('DEV: unknown section types:', unknownSectionTypes);
+  }
+
   // ----- render -----
   app.innerHTML = "";
   app.appendChild(renderHeader(site));
-  (page.sections || []).forEach((sec) => app.appendChild(renderSection(sec)));
+  (sectionsList || []).forEach((sec) => {
+    try {
+      app.appendChild(renderSection(sec));
+    } catch (err) {
+      // Non-fatal: render an inline error box and continue
+      if (isDev) console.error('Error rendering section', sec && sec.type, err);
+      const errNode = h('div', { style: 'padding:18px;border-radius:8px;margin:12px 0;background:#2a1010;color:#fff' }, `Error rendering section ${sec && sec.type}: ${err && err.message ? err.message : String(err)}`);
+      app.appendChild(errNode);
+    }
+  });
   app.appendChild(renderFooter(site));
 
   // ----- header/footer -----
@@ -459,7 +484,7 @@
       h("p", {}, t.text || ""),
       h("div", { class: "person" }, t.name || ""),
       h("div", { class: "role" }, t.role || "")
-    ])));
+    ])));  
     c.appendChild(grid);
 
     s.appendChild(c);
